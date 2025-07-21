@@ -42,6 +42,14 @@ else:
         placeholder="Enter your Pipedream Notion URL")
     drive_pipedream_url = None
 
+# Email configuration in sidebar
+st.sidebar.subheader("Email Notification (Optional)")
+user_email = st.sidebar.text_input("Your Email", placeholder="Enter your email to receive the learning path")
+smtp_server = st.sidebar.text_input("SMTP Server", value="smtp.gmail.com")
+smtp_port = st.sidebar.number_input("SMTP Port", value=587)
+smtp_user = st.sidebar.text_input("SMTP Username", placeholder="Your email address")
+smtp_password = st.sidebar.text_input("SMTP Password", type="password", placeholder="Your email password or app password")
+
 # Quick guide before goal input
 st.info("""
 **Quick Guide:**
@@ -134,11 +142,30 @@ if st.button("Generate Learning Path", type="primary", disabled=st.session_state
             
             # Display results
             st.header("Your Learning Path")
-            # print(result)
             if result and "messages" in result:
+                learning_path_text = "\n".join([msg.content for msg in result["messages"]])
                 for msg in result["messages"]:
                     st.markdown(f"📚 {msg.content}")
-
+                
+                # Send email if user provided an email
+                if user_email and smtp_user and smtp_password:
+                    from utils import send_email
+                    subject = "Your Personalized Learning Path"
+                    body = f"Here is your generated learning path:\n\n{learning_path_text}"
+                    sent = send_email(
+                        subject=subject,
+                        body=body,
+                        to_email=user_email,
+                        from_email=smtp_user,
+                        smtp_server=smtp_server,
+                        smtp_port=int(smtp_port),
+                        smtp_user=smtp_user,
+                        smtp_password=smtp_password
+                    )
+                    if sent:
+                        st.success(f"Learning path sent to {user_email}!")
+                    else:
+                        st.warning("Failed to send email. Please check your SMTP settings.")
             else:
                 st.error("No results were generated. Please try again.")
                 st.session_state.is_generating = False
@@ -146,3 +173,4 @@ if st.button("Generate Learning Path", type="primary", disabled=st.session_state
             st.error(f"An error occurred: {str(e)}")
             st.error("Please check your API keys and URLs, and try again.")
             st.session_state.is_generating = False
+            

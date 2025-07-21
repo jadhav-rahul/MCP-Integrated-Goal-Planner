@@ -7,6 +7,40 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from typing import Optional, Tuple, Any, Callable
 import asyncio
 
+from langchain_core.messages import HumanMessage
+from langchain_core.runnables import RunnableConfig
+from prompt import user_goal_prompt
+from langgraph.prebuilt import create_react_agent
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain_google_genai import ChatGoogleGenerativeAI
+from typing import Optional, Tuple, Any, Callable
+import asyncio
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def send_email(subject, body, to_email, from_email, smtp_server, smtp_port, smtp_user, smtp_password):
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.sendmail(from_email, to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return False
+
+# ...existing code continues...
+
 cfg = RunnableConfig(recursion_limit=100)
 
 def initialize_model(google_api_key: str) -> ChatGoogleGenerativeAI:
